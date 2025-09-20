@@ -24,11 +24,12 @@ Em filas FIFO (First-In-First-Out), `MessageGroupId` é um atributo que organiza
 
 ```mermaid
 graph LR
-    A[Aplicação <br/>Calcula Shard<br/>Hash CustomerID<br/>% 3 = shard] --> B[SNS FIFO<br/>High Throughput<br/>300 msg/s por MessageGroupId<br/> -**shard**- ]
+    A[Aplicação <br/>Calcula Shard<br/>Hash CustomerID<br/>% 3 = shard]  --> B[SNS FIFO<br/>High Throughput<br/>300 msg/s por MessageGroupId<br/> -**shard**- ] --> FILTER[Substription Filter pelo ID do Shard] --> B
     
-    B --> C[SQS FIFO #0<br/>Shard 0<br/> 3000 msg/s]
-    B --> D[SQS FIFO #1<br/>Shard 1<br/> 3000 msg/s]
-    B --> E[SQS FIFO #2<br/>Shard 2<br/> 3000 msg/s]
+    
+    FILTER --> C[SQS FIFO #0<br/>Shard 0<br/> 3000 msg/s]
+    FILTER --> D[SQS FIFO #1<br/>Shard 1<br/> 3000 msg/s]
+    FILTER --> E[SQS FIFO #2<br/>Shard 2<br/> 3000 msg/s]
     
     style A fill:#e1f5fe
     style B fill:#f3e5f5

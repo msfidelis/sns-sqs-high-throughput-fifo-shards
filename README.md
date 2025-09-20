@@ -12,7 +12,8 @@ Em filas FIFO (First-In-First-Out), `MessageGroupId` é um atributo que organiza
 - **Configuração**: `fifo_throughput_scope = "MessageGroup"`
 
 ### 2. SQS FIFO High Throughput  
-- **Throughput**: Até 3.000 msg/s por MessageGroupId (vs 300 msg/s padrão)
+- **Throughput**: Até 70.000 msg/s sem batching por fila (vs 300 msg/s padrão)
+- **Com Batching**: Ainda maior que 70.000 msg/s
 - **Configuração**: `fifo_throughput_limit = "perMessageGroupId"`
 
 ### 3. Sharding com Hash Consistente
@@ -77,9 +78,10 @@ resource "aws_sqs_queue" "fifo_consumers" {
 }
 ```
 
-**Limites de Performance:**
-- **Standard**: 300 msg/s por fila FIFO
-- **High Throughput**: 3.000 msg/s por MessageGroupId
+**Limites de Performance SQS FIFO:**
+- **Standard FIFO**: 300 msg/s (sem batching) | 3.000 msg/s (com batching)
+- **High Throughput FIFO**: 70.000 msg/s (sem batching) | Ainda maior com batching
+- **Escopo**: `perMessageGroupId` permite paralelização entre grupos
 
 ## Algoritmo de Sharding
 
@@ -167,6 +169,76 @@ input := &sns.PublishInput{
 	},
 }
 ```
+
+## Análise de Performance: 50.000 CustomerIDs
+
+### Cenário: Mix de 50.000 CustomerIDs Únicos
+
+Com 50.000 CustomerIDs diferentes distribuídos entre 3 shards usando hash consistente:
+
+```mermaid
+pie title Distribuição de CustomerIDs por Shard
+    "Shard 0" : 16667
+    "Shard 1" : 16667  
+    "Shard 2" : 16666
+```
+
+### Cálculo de TPS por Modelo
+
+#### 1. SNS FIFO Standard (Baseline)
+```
+• Limite: 10 TPS por MessageGroupId
+• 50.000 CustomerIDs = 50.000 MessageGroupIds únicos
+• TPS Total: 50.000 × 10 = 500.000 TPS teórico
+• Gargalo: SNS topic (300 TPS máximo)
+• TPS Real: 300 TPS
+```
+
+#### 2. SNS FIFO High Throughput + SQS FIFO Standard
+```
+• SNS Limite: 300 TPS por MessageGroupId
+• SQS Limite: 300 TPS por fila (sem batching)
+• 3 filas SQS × 300 TPS = 900 TPS total
+• Gargalo: SNS Topic (~300 TPS total)
+• TPS Real: ~300 TPS
+```
+
+#### 3. SNS FIFO High Throughput + SQS FIFO High Throughput (Atual)
+```
+• SNS: 300 TPS por MessageGroupId (CustomerID)
+• SQS: 70.000 TPS por fila (sem batching)
+• 50.000 CustomerIDs únicos
+• Cada CustomerID pode processar até 300 TPS (limite SNS)
+• TPS Teórico por Fila SQS: 70.000 TPS
+```
+
+#### 3. SNS FIFO High Throughput + SQS FIFO High Throughput (Atual)
+```
+• SNS: 300 TPS por MessageGroupId (CustomerID)
+• SQS: 3.000 TPS por MessageGroupId (CustomerID)
+• 50.000 CustomerIDs únicos
+• Cada CustomerID pode processar até 3.000 TPS
+• TPS Teórico Total: 50.000 × 3.000 = 150.000.000 TPS
+• Gargalo Real: SNS FIFO (300 TPS por CustomerID)
+• TPS Real: 50.000 × 300 = 15.000.000 TPS teórico
+```
+
+### Resultado Final
+
+| Modelo | SNS Limit | SQS Limit | Gargalo Principal |
+|--------|-----------|-----------|-------------------|
+| SNS FIFO Standard | 10/CustomerID | 300/fila | SNS Topic |
+| SNS HT + SQS Standard | 300/CustomerID | 300/fila | SNS Topic |
+| SNS HT + SQS HT (Atual) | 300/CustomerID | 70.000/fila | SNS Topic |
+
+### Observações Importantes
+
+1. **Gargalo Principal**: SNS FIFO topic tem limite global de ~300 TPS independente do modo
+2. **SQS Capacidade**: Com 70.000 TPS por fila, SQS nunca é o gargalo nesta arquitetura
+3. **MessageGroupId = CustomerID**: Cada CustomerID é um grupo único com seus próprios limites SNS
+4. **Sharding**: Distribui carga entre filas SQS, mas não resolve gargalo do SNS
+5. **Benefício Real**: Preparação para múltiplos tópicos SNS ou outras otimizações
+
 
 ## Configuração e Uso
 

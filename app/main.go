@@ -85,12 +85,11 @@ func main() {
 		}
 	}
 
-	fmt.Printf("🚀 HIGH PERFORMANCE SNS FIFO LOAD TEST\n")
-	fmt.Printf("📡 Topic ARN: %s\n", topicArn)
-	fmt.Printf("📦 Messages: %d\n", numMessages)
-	fmt.Printf("⚡ Workers: %d\n", workers)
-	fmt.Printf("🖥️  CPU Cores: %d\n", runtime.NumCPU())
-	fmt.Printf("🔀 Sharding: 3 shards (using CustomerID as shard key)\n")
+	fmt.Printf("Topic ARN: %s\n", topicArn)
+	fmt.Printf("Messages: %d\n", numMessages)
+	fmt.Printf("Workers: %d\n", workers)
+	fmt.Printf("CPU Cores: %d\n", runtime.NumCPU())
+	fmt.Printf("Sharding: 3 shards (using CustomerID as shard key)\n")
 
 	// Optimized AWS session
 	sess, err := session.NewSession(&aws.Config{
@@ -108,36 +107,24 @@ func main() {
 	result := publisher.testHighPerformance(numMessages)
 
 	// Print detailed results
-	fmt.Printf("\n📊 PERFORMANCE RESULTS:\n")
-	fmt.Printf("✅ Sent: %d\n", result.Sent)
-	fmt.Printf("❌ Failed: %d\n", result.Failed)
-	fmt.Printf("⏱️  Total Time: %v\n", result.ElapsedTime)
+	fmt.Printf("\nPERFORMANCE RESULTS:\n")
+	fmt.Printf("Sent: %d\n", result.Sent)
+	fmt.Printf("Failed: %d\n", result.Failed)
+	fmt.Printf("Total Time: %v\n", result.ElapsedTime)
 
 	if result.ElapsedTime.Seconds() > 0 {
 		rate := float64(result.Sent) / result.ElapsedTime.Seconds()
-		fmt.Printf("🚀 Throughput: %.2f msg/s\n", rate)
+		fmt.Printf("Throughput: %.2f msg/s\n", rate)
 
 		efficiency := (rate / limit) * 100 // limit is SNS FIFO theoretical max
-		fmt.Printf("⚡ Efficiency: %.1f%% of SNS FIFO limit\n", efficiency)
-
-		if rate >= 250 {
-			fmt.Println("🏆 EXCELLENT! Near optimal performance")
-		} else if rate >= 200 {
-			fmt.Println("✅ VERY GOOD! Strong performance")
-		} else if rate >= 150 {
-			fmt.Println("✅ GOOD! Solid performance")
-		} else if rate >= 100 {
-			fmt.Println("⚠️  MODERATE! Consider optimization")
-		} else {
-			fmt.Println("❌ LOW! Check AWS limits or network")
-		}
+		fmt.Printf("Efficiency: %.1f%% of SNS FIFO limit\n", efficiency)
 	}
 
 	successRate := float64(result.Sent) / float64(result.Sent+result.Failed) * 100
-	fmt.Printf("✨ Success Rate: %.2f%%\n", successRate)
+	fmt.Printf("Success Rate: %.2f%%\n", successRate)
 
 	if result.Failed > 0 {
-		fmt.Printf("⚠️  Failed messages might be due to rate limiting\n")
+		fmt.Printf("Failed messages might be due to rate limiting\n")
 	}
 
 }

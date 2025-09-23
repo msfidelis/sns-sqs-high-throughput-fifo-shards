@@ -1,6 +1,6 @@
 # SNS FIFO High Throughput, SQS FIFO High Throughput e Sharding com Hashing
 
-Esta solução implementa uma arquitetura de alta performance usando **Amazon SNS FIFO** com **High Throughput** e **Amazon SQS FIFO** com **High Throughput** para superar limitações de throttling tradicionais do SQS FIFO. O projeto inclui um sistema de sharding baseado em hash consistente para distribuir mensagens de forma equilibrada entre múltiplas filas.
+Esta solução implementa uma arquitetura de distribuição de shardings usando **Amazon SNS FIFO** com **High Throughput** e **Amazon SQS FIFO** com **High Throughput** para superar limitações de throttling tradicionais do SQS FIFO. O projeto inclui um sistema de sharding baseado em hash consistente para distribuir mensagens de forma equilibrada entre múltiplas filas.
 
 ## Características da Solução
 
